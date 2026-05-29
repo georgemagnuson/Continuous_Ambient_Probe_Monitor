@@ -80,6 +80,7 @@ void logDataPoint() {
 
   Serial.println(F("+-------------------------------------------+"));
   Serial.print(F("| Local Frame Timestamp : ")); Serial.println(curTime);
+  Serial.print(F("| Device IP Address     : ")); Serial.println(globalIP);
   Serial.print(F("| DHT11 Air Temp        : ")); Serial.print(t_dht, 1); Serial.println(F(" °C"));
   Serial.print(F("| DHT11 Humidity        : ")); Serial.print(h_dht, 0); Serial.println(F(" %"));
   Serial.print(F("| DS18B20 Water Probe   : ")); Serial.print(t_probe, 1); Serial.println(F(" °C"));
