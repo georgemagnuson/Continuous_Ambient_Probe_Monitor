@@ -36,11 +36,11 @@ const char INDEX_HTML[] PROGMEM = R"=====(
 <div class='card'>
     <h2>CAPM Live Monitor</h2>
     <table>
-        <tr><td>Air Temperature</td> <td id='t_dht'    class='val'>--</td></tr>
-        <tr><td>Air Humidity</td>    <td id='h_dht'    class='val'>--</td></tr>
-        <tr><td>Water Probe</td>     <td id='t_ds'     class='val'>--</td></tr>
-        <tr><td>Needle Probe</td>    <td id='t_kmeter' class='val'>--</td></tr>
-        <tr><td>Battery</td>         <td id='v_bat'    class='val'>--</td></tr>
+        <tr><td>DHT11 Ambient Air Temp</td>      <td id='t_dht'    class='val'>--</td></tr>
+        <tr><td>DHT11 Ambient Air Humidity</td> <td id='h_dht'    class='val'>--</td></tr>
+        <tr><td>DS18B20 Sensor</td>             <td id='t_ds'     class='val'>--</td></tr>
+        <tr><td>KMeterISO Needle Probe Temp</td><td id='t_kmeter' class='val'>--</td></tr>
+        <tr><td>Battery</td>                    <td id='v_bat'    class='val'>--</td></tr>
     </table>
 
     <div class='btn-group'>
