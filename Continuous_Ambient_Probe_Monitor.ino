@@ -123,44 +123,39 @@ void handleDataPoint() {
 }
 
 void handleFullDataDump() {
-  Serial.println(F("[CAPM HTTP] Compiling historical array into pristine flat buffer..."));
-  
+  Serial.println(F("[CAPM HTTP] Streaming historical array via chunked transfer..."));
+
+  server.sendHeader("Cache-Control", "no-cache, private");
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "application/json", "");
+
   if (logCount == 0) {
-    /* Send a clean, simple empty array response */
-    server.sendHeader("Cache-Control", "no-cache, private");
-    server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.send(200, "application/json", "[]");
+    server.sendContent("[]");
+    server.sendContent("");
     return;
   }
 
-  /* 1. Assemble the entire JSON payload smoothly in memory */
-  String fullJson = "[";
+  server.sendContent("[");
+
   int startIdx = (logCount == MAX_POINTS) ? logIndex : 0;
-  
   for (int i = 0; i < logCount; i++) {
-    int currentIdx = (startIdx + i) % MAX_POINTS;
-    
-    fullJson += "{";
-    fullJson += "\"time_string\":\"" + dataLog[currentIdx].timeString + "\",";
-    fullJson += "\"dht_temp\":" + String(dataLog[currentIdx].dhtTemp, 1) + ",";
-    fullJson += "\"dht_humidity\":" + String(dataLog[currentIdx].dhtHum, 0) + ",";
-    fullJson += "\"ds_probe\":" + String(dataLog[currentIdx].dsProbe, 1) + ",";
-    fullJson += "\"battery_volts\":" + String(dataLog[currentIdx].batteryVolts, 2) + ",";
-    fullJson += "\"battery_percentage\":" + String(dataLog[currentIdx].batteryPct, 0);
-    fullJson += "}";
-    
-    if (i < logCount - 1) {
-      fullJson += ",";
-    }
+    int idx = (startIdx + i) % MAX_POINTS;
+
+    String entry = "{";
+    entry += "\"time_string\":\"" + dataLog[idx].timeString + "\",";
+    entry += "\"dht_temp\":"          + String(dataLog[idx].dhtTemp, 1)    + ",";
+    entry += "\"dht_humidity\":"      + String(dataLog[idx].dhtHum, 0)     + ",";
+    entry += "\"ds_probe\":"          + String(dataLog[idx].dsProbe, 1)    + ",";
+    entry += "\"battery_volts\":"     + String(dataLog[idx].batteryVolts, 2) + ",";
+    entry += "\"battery_percentage\":" + String(dataLog[idx].batteryPct, 0) + "}";
+    if (i < logCount - 1) entry += ",";
+
+    server.sendContent(entry);
   }
-  fullJson += "]";
 
-  /* 2. Set headers WITHOUT setContentLength. Let the core engine handle transmission windows */
-  server.sendHeader("Cache-Control", "no-cache, private");
-  server.sendHeader("Access-Control-Allow-Origin", "*");
-
-  /* 3. Deliver the monolithic string pass. The library handles frame splits natively */
-  server.send(200, "application/json", fullJson);
+  server.sendContent("]");
+  server.sendContent("");  // terminate chunked transfer
 }
 
 void setup() {
