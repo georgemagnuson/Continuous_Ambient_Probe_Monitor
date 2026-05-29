@@ -137,25 +137,32 @@ void handleFullDataDump() {
     return;
   }
 
-  server.sendContent("[");
-
   int startIdx = (logCount == MAX_POINTS) ? logIndex : 0;
+  String batch = "[";
+
   for (int i = 0; i < logCount; i++) {
     int idx = (startIdx + i) % MAX_POINTS;
 
-    String entry = "{";
-    entry += "\"time_string\":\"" + dataLog[idx].timeString + "\",";
-    entry += "\"dht_temp\":"          + String(dataLog[idx].dhtTemp, 1)    + ",";
-    entry += "\"dht_humidity\":"      + String(dataLog[idx].dhtHum, 0)     + ",";
-    entry += "\"ds_probe\":"          + String(dataLog[idx].dsProbe, 1)    + ",";
-    entry += "\"battery_volts\":"     + String(dataLog[idx].batteryVolts, 2) + ",";
-    entry += "\"battery_percentage\":" + String(dataLog[idx].batteryPct, 0) + "}";
-    if (i < logCount - 1) entry += ",";
+    batch += "{";
+    batch += "\"time_string\":\"" + dataLog[idx].timeString + "\",";
+    batch += "\"dht_temp\":"           + String(dataLog[idx].dhtTemp, 1)      + ",";
+    batch += "\"dht_humidity\":"       + String(dataLog[idx].dhtHum, 0)       + ",";
+    batch += "\"ds_probe\":"           + String(dataLog[idx].dsProbe, 1)      + ",";
+    batch += "\"battery_volts\":"      + String(dataLog[idx].batteryVolts, 2) + ",";
+    batch += "\"battery_percentage\":" + String(dataLog[idx].batteryPct, 0)   + "}";
 
-    server.sendContent(entry);
+    bool last = (i == logCount - 1);
+    if (!last) batch += ",";
+
+    // Flush every 5 entries to keep chunk count low and avoid watchdog resets
+    if ((i % 5 == 4) || last) {
+      if (last) batch += "]";
+      server.sendContent(batch);
+      batch = "";
+      yield();
+    }
   }
 
-  server.sendContent("]");
   server.sendContent("");  // terminate chunked transfer
 }
 
