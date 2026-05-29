@@ -37,6 +37,7 @@ int logIndex = 0;
 
 unsigned long lastLogTime = 0;
 unsigned long lastHeartbeatTime = 0;
+unsigned long totalLogCount = 0;
 String globalIP = "0.0.0.0";
 bool lastWifiState = false;
 
@@ -85,7 +86,10 @@ void logDataPoint() {
   dataLog[logIndex].batteryVolts = b_volts;
   dataLog[logIndex].batteryPct  = b_pct;
 
+  totalLogCount++;
+
   Serial.println(F("+-----------------------------------------------+"));
+  Serial.print(F("| Data Point #                : ")); Serial.println(totalLogCount);
   Serial.print(F("| Local Frame Timestamp       : ")); Serial.println(curTime);
   Serial.print(F("| Device IP Address           : ")); Serial.println(globalIP);
   Serial.print(F("| DHT11 Ambient Air Temp      : ")); Serial.print(t_dht, 1); Serial.println(F(" °C"));
