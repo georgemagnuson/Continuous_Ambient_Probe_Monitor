@@ -58,6 +58,8 @@ const char INDEX_HTML[] PROGMEM = R"=====(
 
 <script src='https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js'></script>
 <script>
+    console.log('[CAPM] Script block executing');
+
     // Local ring buffer — holds last 60 readings (15 min at 15s log interval)
     const MAX_PTS = 60;
     let localLabels  = [];
@@ -66,6 +68,7 @@ const char INDEX_HTML[] PROGMEM = R"=====(
     let lastTimestamp = "";
 
     let chart = null;
+    console.log('[CAPM] Chart.js available:', typeof Chart !== 'undefined');
     try {
         const ctx = document.getElementById('telemetryChart').getContext('2d');
         chart = new Chart(ctx, {
@@ -95,16 +98,25 @@ const char INDEX_HTML[] PROGMEM = R"=====(
                 }
             }
         });
+        console.log('[CAPM] Chart initialised OK');
     } catch(e) {
+        console.error('[CAPM] Chart init failed:', e.message);
         document.getElementById('chartNotice').style.display = 'block';
     }
 
+    let pollCount = 0;
+
     async function updateDashboard() {
+        pollCount++;
+        console.log('[CAPM] Poll #' + pollCount + ' starting');
         const flag = document.getElementById('statusBox');
         try {
+            console.log('[CAPM] Fetching /data...');
             const res  = await fetch('/data');
+            console.log('[CAPM] /data response status:', res.status, res.ok ? 'OK' : 'FAIL');
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const json = await res.json();
+            console.log('[CAPM] /data payload:', JSON.stringify(json));
 
             document.getElementById('t_dht').innerText = json.dht_temp.toFixed(1) + ' C';
             document.getElementById('h_dht').innerText = json.dht_humidity.toFixed(0) + ' %';
@@ -116,6 +128,7 @@ const char INDEX_HTML[] PROGMEM = R"=====(
 
             // Only add a chart point when the firmware has logged a new reading
             if (chart && json.time_string && json.time_string !== lastTimestamp) {
+                console.log('[CAPM] New timestamp', json.time_string, '— adding chart point, total:', localLabels.length + 1);
                 lastTimestamp = json.time_string;
                 localLabels.push(json.time_string);
                 localAirTemp.push(json.dht_temp);
@@ -129,8 +142,12 @@ const char INDEX_HTML[] PROGMEM = R"=====(
                 chart.data.datasets[0].data = localAirTemp;
                 chart.data.datasets[1].data = localProbe;
                 chart.update();
+                console.log('[CAPM] Chart updated, points in buffer:', localLabels.length);
+            } else {
+                console.log('[CAPM] Same timestamp', json.time_string, '— table updated, chart unchanged');
             }
         } catch(err) {
+            console.error('[CAPM] Poll #' + pollCount + ' failed:', err.message);
             flag.innerText = 'Telemetry Lag: Reconnecting...';
             flag.style.color = '#d97706';
         }
@@ -138,7 +155,10 @@ const char INDEX_HTML[] PROGMEM = R"=====(
         setTimeout(updateDashboard, 4000);
     }
 
-    window.onload = () => { updateDashboard(); };
+    window.onload = () => {
+        console.log('[CAPM] window.onload fired — starting dashboard');
+        updateDashboard();
+    };
 </script>
 
 </body>
