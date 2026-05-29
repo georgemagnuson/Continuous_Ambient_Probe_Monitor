@@ -155,8 +155,44 @@ const char INDEX_HTML[] PROGMEM = R"=====(
         setTimeout(updateDashboard, 4000);
     }
 
-    window.onload = () => {
-        console.log('[CAPM] window.onload fired — starting dashboard');
+    async function preloadHistory() {
+        console.log('[CAPM] Preloading history from /full_data...');
+        try {
+            const res = await fetch('/full_data');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const history = await res.json();
+            if (!Array.isArray(history) || history.length === 0) {
+                console.log('[CAPM] No history available yet');
+                return;
+            }
+            console.log('[CAPM] Received', history.length, 'historical points');
+
+            // Take only the last MAX_PTS entries so the ring buffer isn't over-filled
+            const slice = history.slice(-MAX_PTS);
+            slice.forEach(p => {
+                localLabels.push(p.time_string || '');
+                localAirTemp.push(p.dht_temp);
+                localProbe.push(p.ds_probe);
+            });
+
+            // Set lastTimestamp so the polling loop doesn't re-add the final point
+            lastTimestamp = slice[slice.length - 1].time_string || '';
+
+            if (chart) {
+                chart.data.labels           = localLabels;
+                chart.data.datasets[0].data = localAirTemp;
+                chart.data.datasets[1].data = localProbe;
+                chart.update();
+                console.log('[CAPM] Chart seeded with', localLabels.length, 'points, last timestamp:', lastTimestamp);
+            }
+        } catch(err) {
+            console.warn('[CAPM] History preload failed (device may have just booted):', err.message);
+        }
+    }
+
+    window.onload = async () => {
+        console.log('[CAPM] window.onload fired — preloading history then starting dashboard');
+        await preloadHistory();
         updateDashboard();
     };
 </script>
