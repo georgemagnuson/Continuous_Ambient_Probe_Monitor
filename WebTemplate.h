@@ -60,8 +60,8 @@ const char INDEX_HTML[] PROGMEM = R"=====(
 <script>
     console.log('[CAPM] Script block executing');
 
-    // Local ring buffer — holds last 60 readings (15 min at 15s log interval)
-    const MAX_PTS = 60;
+    // Local ring buffer — 100 points covers 8+ hours at 5-min production interval
+    const MAX_PTS = 100;
     let localLabels  = [];
     let localAirTemp = [];
     let localProbe   = [];

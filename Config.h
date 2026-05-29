@@ -30,7 +30,7 @@ const char* const NTP_SERVER = "nz.pool.ntp.org";
 const char* const TZ_INFO = "NZST-12NZDT,M9.5.0,M4.1.0/3"; // Auto-shifts for Auckland
 
 // --- Logging & Notification Baselines ---
-const unsigned long LOG_INTERVAL = 15000;       // Continuous trace record (15 Sec)
+const unsigned long LOG_INTERVAL = 15000;       // Testing: 15s. Production: 300000 (5 min) for 6-7hr sessions
 const unsigned long HEARTBEAT_INTERVAL = 3000;  // Visual pulse speed indicator
 const unsigned long HEARTBEAT_DURATION = 80;    // Active pulse window duration
 
