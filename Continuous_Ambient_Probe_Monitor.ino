@@ -85,15 +85,15 @@ void logDataPoint() {
   dataLog[logIndex].batteryVolts = b_volts;
   dataLog[logIndex].batteryPct  = b_pct;
 
-  Serial.println(F("+-------------------------------------------+"));
-  Serial.print(F("| Local Frame Timestamp : ")); Serial.println(curTime);
-  Serial.print(F("| Device IP Address     : ")); Serial.println(globalIP);
-  Serial.print(F("| DHT11 Air Temp        : ")); Serial.print(t_dht, 1); Serial.println(F(" °C"));
-  Serial.print(F("| DHT11 Humidity        : ")); Serial.print(h_dht, 0); Serial.println(F(" %"));
-  Serial.print(F("| DS18B20 Water Probe   : ")); Serial.print(t_probe, 1); Serial.println(F(" °C"));
-  Serial.print(F("| KMeterISO Needle Probe: ")); Serial.println(F("-- (not connected)"));
-  Serial.print(F("| Battery Level         : ")); Serial.print(b_volts, 2); Serial.print(F("V (")); Serial.print(b_pct, 0); Serial.println(F("%)"));
-  Serial.println(F("+-------------------------------------------+"));
+  Serial.println(F("+-----------------------------------------------+"));
+  Serial.print(F("| Local Frame Timestamp       : ")); Serial.println(curTime);
+  Serial.print(F("| Device IP Address           : ")); Serial.println(globalIP);
+  Serial.print(F("| DHT11 Ambient Air Temp      : ")); Serial.print(t_dht, 1); Serial.println(F(" °C"));
+  Serial.print(F("| DHT11 Ambient Air Humidity  : ")); Serial.print(h_dht, 0); Serial.println(F(" %"));
+  Serial.print(F("| DS18B20 Sensor              : ")); Serial.print(t_probe, 1); Serial.println(F(" °C"));
+  Serial.print(F("| KMeterISO Needle Probe Temp : ")); Serial.println(F("-- (not connected)"));
+  Serial.print(F("| Battery Level               : ")); Serial.print(b_volts, 2); Serial.print(F("V (")); Serial.print(b_pct, 0); Serial.println(F("%)"));
+  Serial.println(F("+-----------------------------------------------+"));
 
   logIndex = (logIndex + 1) % MAX_POINTS;
   if (logCount < MAX_POINTS) logCount++;
