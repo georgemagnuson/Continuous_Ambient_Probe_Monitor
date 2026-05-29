@@ -1,0 +1,11 @@
+# Private credentials — never commit
+Config_private.h
+
+# Arduino build artifacts
+build/
+*.elf
+*.bin
+*.map
+
+# macOS
+.DS_Store
