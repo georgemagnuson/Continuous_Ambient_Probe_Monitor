@@ -27,8 +27,8 @@ const char INDEX_HTML[] PROGMEM = R"=====(
         .btn-data:hover { background: #0056b3; }
         .btn-history { background: #6c757d; }
         .btn-history:hover { background: #545b62; }
+        #chartNotice { font-size: 12px; color: #aaa; margin-top: 10px; display: none; }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
 </head>
 <body>
 
@@ -40,7 +40,7 @@ const char INDEX_HTML[] PROGMEM = R"=====(
         <tr><td>Water Probe</td><td id='t_ds' class='val'>--</td></tr>
         <tr><td>Battery Monitor</td><td id='v_bat' class='val'>--</td></tr>
     </table>
-    
+
     <div class='btn-group'>
         <button class='nav-btn btn-data' onclick="window.open('/data', '_blank')">View Raw Live Data</button>
         <button class='nav-btn btn-history' onclick="window.open('/full_data', '_blank')">View Raw History Logs</button>
@@ -52,66 +52,76 @@ const char INDEX_HTML[] PROGMEM = R"=====(
 <div class='chart-box'>
     <h2>Historical Temperature Trends (C)</h2>
     <canvas id="telemetryChart" width="400" height="200"></canvas>
+    <div id="chartNotice">Chart.js unavailable &mdash; connect to the internet to enable the graph.</div>
 </div>
 
+<!-- Chart.js at end of body so a slow/failed CDN load never blocks the table -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
 <script>
-    const ctx = document.getElementById('telemetryChart').getContext('2d');
-    const telemetryChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [], 
-            datasets: [
-                {
-                    label: 'Air Temp',
-                    borderColor: '#ff9f43',
-                    backgroundColor: 'rgba(255, 159, 67, 0.1)',
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    fill: true,
-                    data: []
-                },
-                {
-                    label: 'Water Probe',
-                    borderColor: '#00cec9',
-                    backgroundColor: 'rgba(0, 206, 201, 0.1)',
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    fill: true,
-                    data: []
+    // Initialise chart only if Chart.js loaded successfully from CDN.
+    // If it didn't load, the table still updates normally.
+    let telemetryChart = null;
+    try {
+        const ctx = document.getElementById('telemetryChart').getContext('2d');
+        telemetryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Air Temp',
+                        borderColor: '#ff9f43',
+                        backgroundColor: 'rgba(255, 159, 67, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        fill: true,
+                        data: []
+                    },
+                    {
+                        label: 'Water Probe',
+                        borderColor: '#00cec9',
+                        backgroundColor: 'rgba(0, 206, 201, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        fill: true,
+                        data: []
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        gridLines: { display: false },
+                        ticks: { fontSize: 10, fontColor: '#888' }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        ticks: { min: 0, max: 40, stepSize: 10, fontSize: 10, fontColor: '#888' },
+                        gridLines: { color: '#eee' }
+                    }]
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                xAxes: [{
-                    display: true,
-                    gridLines: { display: false },
-                    ticks: { fontSize: 10, fontColor: '#888' }
-                }],
-                yAxes: [{
-                    display: true,
-                    ticks: { min: 0, max: 40, stepSize: 10, fontSize: 10, fontColor: '#888' },
-                    gridLines: { color: '#eee' }
-                }]
             }
-        }
-    });
+        });
+    } catch(e) {
+        document.getElementById('chartNotice').style.display = 'block';
+    }
 
     async function updateDashboard() {
         const flag = document.getElementById('statusBox');
-        
-        /* PIPELINE 1: Live Text Metrics Dashboard Update */
+
+        /* PIPELINE 1: Live Text Metrics — always runs */
         try {
             let res = await fetch('/data');
-            if(!res.ok) throw new Error("Network response error");
+            if (!res.ok) throw new Error("HTTP " + res.status);
             let json = await res.json();
-            
+
             document.getElementById('t_dht').innerText = json.dht_temp.toFixed(1) + " C";
             document.getElementById('h_dht').innerText = json.dht_humidity.toFixed(0) + " %";
-            document.getElementById('t_ds').innerText = json.ds_probe.toFixed(1) + " C";
+            document.getElementById('t_ds').innerText  = json.ds_probe.toFixed(1) + " C";
             document.getElementById('v_bat').innerText = json.battery_volts.toFixed(2) + "V (" + json.battery_percentage.toFixed(0) + "%)";
-            
+
             flag.innerText = "Sync Active: " + (json.time_string || "Connected");
             flag.style.color = "green";
         } catch(err) {
@@ -119,33 +129,29 @@ const char INDEX_HTML[] PROGMEM = R"=====(
             flag.style.color = "#d97706";
         }
 
-        /* PIPELINE 2: Historical Chart Timeline Update (Isolated) */
-        try {
-            let resHistory = await fetch('/full_data');
-            if(resHistory.ok) {
+        /* PIPELINE 2: Historical Chart — only if Chart.js loaded */
+        if (telemetryChart) {
+            try {
+                let resHistory = await fetch('/full_data');
+                if (!resHistory.ok) throw new Error("HTTP " + resHistory.status);
                 let historyData = await resHistory.json();
-                
-                if(Array.isArray(historyData) && historyData.length > 0) {
-                    let labels = historyData.map(item => item.time_string || "");
-                    let airData = historyData.map(item => item.dht_temp);
-                    let probeData = historyData.map(item => item.ds_probe);
-                    
-                    telemetryChart.data.labels = labels;
-                    telemetryChart.data.datasets[0].data = airData;
-                    telemetryChart.data.datasets[1].data = probeData;
-                    
+
+                if (Array.isArray(historyData) && historyData.length > 0) {
+                    telemetryChart.data.labels           = historyData.map(p => p.time_string || "");
+                    telemetryChart.data.datasets[0].data = historyData.map(p => p.dht_temp);
+                    telemetryChart.data.datasets[1].data = historyData.map(p => p.ds_probe);
                     telemetryChart.update();
                 }
-            }
-        } catch(hErr) { 
-            /* Captured exceptions here cannot block Pipeline 1 execution loops */
+            } catch(hErr) { /* chart update failure never blocks table */ }
         }
+
+        // Schedule next update only after this one fully completes.
+        // Using setTimeout instead of setInterval prevents a slow /full_data
+        // response from stacking concurrent requests on the single-threaded server.
+        setTimeout(updateDashboard, 4000);
     }
 
-    window.onload = () => {
-        updateDashboard();
-        setInterval(updateDashboard, 4000);
-    };
+    window.onload = () => { updateDashboard(); };
 </script>
 
 </body>
