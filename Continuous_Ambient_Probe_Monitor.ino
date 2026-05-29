@@ -97,11 +97,24 @@ void logDataPoint() {
 }
 
 void handleRoot() {
+  const size_t htmlLen = sizeof(INDEX_HTML) - 1;  // exact compile-time size, no strlen_P needed
   server.sendHeader("Cache-Control", "no-cache, private");
-  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.setContentLength(htmlLen);
   server.send(200, "text/html", "");
-  server.sendContent_P(INDEX_HTML);
-  server.sendContent("");  // terminate chunked transfer
+
+  // Stream PROGMEM in 256-byte pieces — sending the full 4KB+ in one write
+  // overflows the ESP8266 TCP buffer and silently truncates the response.
+  const size_t CHUNK = 256;
+  char buf[CHUNK + 1];
+  size_t offset = 0;
+  while (offset < htmlLen) {
+    size_t n = min(CHUNK, htmlLen - offset);
+    memcpy_P(buf, INDEX_HTML + offset, n);
+    buf[n] = '\0';
+    server.sendContent(buf);
+    offset += n;
+    yield();
+  }
 }
 
 void handleDataPoint() {
