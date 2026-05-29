@@ -60,8 +60,6 @@ const char INDEX_HTML[] PROGMEM = R"=====(
 
 <script src='https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js'></script>
 <script>
-    console.log('[CAPM] Script block executing');
-
     // Local ring buffer — 100 points covers 8+ hours at 5-min production interval
     const MAX_PTS = 100;
     let localLabels  = [];
@@ -71,7 +69,6 @@ const char INDEX_HTML[] PROGMEM = R"=====(
     let lastTimestamp = "";
 
     let chart = null;
-    console.log('[CAPM] Chart.js available:', typeof Chart !== 'undefined');
     try {
         const ctx = document.getElementById('telemetryChart').getContext('2d');
         chart = new Chart(ctx, {
@@ -107,25 +104,16 @@ const char INDEX_HTML[] PROGMEM = R"=====(
                 }
             }
         });
-        console.log('[CAPM] Chart initialised OK');
     } catch(e) {
-        console.error('[CAPM] Chart init failed:', e.message);
         document.getElementById('chartNotice').style.display = 'block';
     }
 
-    let pollCount = 0;
-
     async function updateDashboard() {
-        pollCount++;
-        console.log('[CAPM] Poll #' + pollCount + ' starting');
         const flag = document.getElementById('statusBox');
         try {
-            console.log('[CAPM] Fetching /data...');
             const res  = await fetch('/data');
-            console.log('[CAPM] /data response status:', res.status, res.ok ? 'OK' : 'FAIL');
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const json = await res.json();
-            console.log('[CAPM] /data payload:', JSON.stringify(json));
 
             document.getElementById('dp_count').innerText  = json.data_point;
             document.getElementById('t_dht').innerText    = json.dht_temp.toFixed(1) + ' C';
@@ -139,7 +127,6 @@ const char INDEX_HTML[] PROGMEM = R"=====(
 
             // Only add a chart point when the firmware has logged a new reading
             if (chart && json.time_string && json.time_string !== lastTimestamp) {
-                console.log('[CAPM] New timestamp', json.time_string, '— adding chart point, total:', localLabels.length + 1);
                 lastTimestamp = json.time_string;
                 localLabels.push(json.time_string);
                 localAirTemp.push(json.dht_temp);
@@ -157,12 +144,8 @@ const char INDEX_HTML[] PROGMEM = R"=====(
                 chart.data.datasets[1].data = localProbe;
                 chart.data.datasets[2].data = localKmeter;
                 chart.update();
-                console.log('[CAPM] Chart updated, points in buffer:', localLabels.length);
-            } else {
-                console.log('[CAPM] Same timestamp', json.time_string, '— table updated, chart unchanged');
             }
         } catch(err) {
-            console.error('[CAPM] Poll #' + pollCount + ' failed:', err.message);
             flag.innerText = 'Telemetry Lag: Reconnecting...';
             flag.style.color = '#d97706';
         }
@@ -171,16 +154,11 @@ const char INDEX_HTML[] PROGMEM = R"=====(
     }
 
     async function preloadHistory() {
-        console.log('[CAPM] Preloading history from /full_data...');
         try {
             const res = await fetch('/full_data');
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const history = await res.json();
-            if (!Array.isArray(history) || history.length === 0) {
-                console.log('[CAPM] No history available yet');
-                return;
-            }
-            console.log('[CAPM] Received', history.length, 'historical points');
+            if (!Array.isArray(history) || history.length === 0) return;
 
             // Take only the last MAX_PTS entries so the ring buffer isn't over-filled
             const slice = history.slice(-MAX_PTS);
@@ -200,15 +178,11 @@ const char INDEX_HTML[] PROGMEM = R"=====(
                 chart.data.datasets[1].data = localProbe;
                 chart.data.datasets[2].data = localKmeter;
                 chart.update();
-                console.log('[CAPM] Chart seeded with', localLabels.length, 'points, last timestamp:', lastTimestamp);
             }
-        } catch(err) {
-            console.warn('[CAPM] History preload failed (device may have just booted):', err.message);
-        }
+        } catch(err) { /* silent — device may have just booted */ }
     }
 
     window.onload = async () => {
-        console.log('[CAPM] window.onload fired — preloading history then starting dashboard');
         await preloadHistory();
         updateDashboard();
     };
