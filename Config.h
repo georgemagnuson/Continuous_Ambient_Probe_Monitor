@@ -9,9 +9,9 @@
 
 // --- Hardware Pin Configurations ---
 #define DS18B20_PIN 5   // Pin D1 -> GPIO 5
-#define DHT_PIN     12  // Pin D6 -> GPIO 12 (moved from D4/GPIO2 — was shared with BOARD_LED)
+#define DHT_PIN     2   // Pin D4 -> GPIO 2 (stacked shield — fixed by hardware)
 #define DHTTYPE     DHT11
-#define BOARD_LED   2   // Onboard Blue Link LED (GPIO 2 / D4)
+#define BOARD_LED   2   // Onboard Blue Link LED (GPIO 2 / D4) — shares pin with DHT_PIN
 #define BATTERY_PIN A0  // Analog battery cell scale line
 
 // --- Physical Notification Hardware Pins ---
