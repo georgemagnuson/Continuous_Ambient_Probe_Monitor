@@ -70,7 +70,6 @@ void logDataPoint() {
   }
   
   dsSensors.requestTemperatures();
-  delay(750);  // DS18B20 conversion time — delay() yields to WiFi stack, requestTemperatures() alone blocks it
   float t_probe = (dsSensors.getDeviceCount() > 0) ? dsSensors.getTempCByIndex(0) : -127.0;
 
   float b_volts = 0.0;
@@ -191,7 +190,6 @@ void setup() {
 
   dht.begin();
   dsSensors.begin();
-  dsSensors.setWaitForConversion(false);  // non-blocking — we yield() during the wait
   delay(2000);   // DHT11 requires 1s+ after begin() before first valid read
   logDataPoint();
 
