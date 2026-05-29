@@ -36,6 +36,7 @@ const char INDEX_HTML[] PROGMEM = R"=====(
 <div class='card'>
     <h2>CAPM Live Monitor</h2>
     <table>
+        <tr><td>Data Point #</td>                 <td id='dp_count' class='val'>--</td></tr>
         <tr><td>DHT11 Ambient Air Temp</td>      <td id='t_dht'    class='val'>--</td></tr>
         <tr><td>DHT11 Ambient Air Humidity</td> <td id='h_dht'    class='val'>--</td></tr>
         <tr><td>DS18B20 Sensor</td>             <td id='t_ds'     class='val'>--</td></tr>
@@ -126,6 +127,7 @@ const char INDEX_HTML[] PROGMEM = R"=====(
             const json = await res.json();
             console.log('[CAPM] /data payload:', JSON.stringify(json));
 
+            document.getElementById('dp_count').innerText  = json.data_point;
             document.getElementById('t_dht').innerText    = json.dht_temp.toFixed(1) + ' C';
             document.getElementById('h_dht').innerText    = json.dht_humidity.toFixed(0) + ' %';
             document.getElementById('t_ds').innerText     = json.ds_probe.toFixed(1) + ' C';

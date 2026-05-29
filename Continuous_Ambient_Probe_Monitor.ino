@@ -116,6 +116,7 @@ void handleDataPoint() {
   int lastSavedIdx = (logIndex - 1 + MAX_POINTS) % MAX_POINTS;
   
   String json = "{";
+  json += "\"data_point\":"        + String(totalLogCount)                         + ",";
   json += "\"time_string\":\"" + dataLog[lastSavedIdx].timeString + "\",";
   json += "\"dht_temp\":"          + String(dataLog[lastSavedIdx].dhtTemp, 1)      + ",";
   json += "\"dht_humidity\":"      + String(dataLog[lastSavedIdx].dhtHum, 0)       + ",";
