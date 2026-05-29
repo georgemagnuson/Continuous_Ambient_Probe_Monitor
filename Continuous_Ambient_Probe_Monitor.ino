@@ -63,6 +63,11 @@ void logDataPoint() {
 
   float t_dht = dht.readTemperature();
   float h_dht = dht.readHumidity();
+  if (isnan(t_dht) || isnan(h_dht)) {
+    delay(500);
+    t_dht = dht.readTemperature();
+    h_dht = dht.readHumidity();
+  }
   
   dsSensors.requestTemperatures();
   float t_probe = (dsSensors.getDeviceCount() > 0) ? dsSensors.getTempCByIndex(0) : -127.0;
@@ -171,26 +176,25 @@ void setup() {
   while (!Serial) { delay(10); }
   delay(1500); 
 
-  pinMode(BOARD_LED, OUTPUT);
+  // BOARD_LED (GPIO 2) is intentionally left unconfigured — it shares the
+  // DHT11 data pin on the stacked shield and must not be driven as OUTPUT.
   pinMode(GREEN_LED_PIN, OUTPUT);
   pinMode(RED_LED_PIN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
 
-  digitalWrite(BOARD_LED, LOW); 
   digitalWrite(GREEN_LED_PIN, LOW);
   digitalWrite(RED_LED_PIN, LOW);
   digitalWrite(BUZZER_PIN, HIGH);
 
   runFullHardwareTestSuite();
 
-  globalIP = connectWiFi();  
-  synchronizeNTP();         
-  
-  digitalWrite(BOARD_LED, HIGH); 
+  globalIP = connectWiFi();
+  synchronizeNTP();
 
   dht.begin();
   dsSensors.begin();
-  logDataPoint(); 
+  delay(2000);   // DHT11 requires 1s+ after begin() before first valid read
+  logDataPoint();
 
   Serial.println(F("\n[CAPM SYSTEM] Initializing API listener paths..."));
   server.on("/", handleRoot);
@@ -208,7 +212,7 @@ void loop() {
   bool wifiNow = (WiFi.status() == WL_CONNECTED);
   if (wifiNow != lastWifiState) {
     lastWifiState = wifiNow;
-    digitalWrite(BOARD_LED, wifiNow ? HIGH : LOW);
+    Serial.println(wifiNow ? F("[CAPM NET] WiFi reconnected.") : F("[CAPM NET] WiFi lost."));
   }
 
   unsigned long currentMillis = millis();
