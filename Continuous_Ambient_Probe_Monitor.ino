@@ -21,12 +21,13 @@ DHT dht(DHT_PIN, DHTTYPE);
 ESP8266WebServer server(80);
 
 struct DataPoint {
-  String timeString; 
+  String timeString;
   float dhtTemp;
   float dhtHum;
   float dsProbe;
+  float kmeterTemp;   // KMeterISO meat/needle probe — -127.0 when not connected
   float batteryVolts;
-  float batteryPct; 
+  float batteryPct;
 };
 
 const int MAX_POINTS = 240; 
@@ -76,12 +77,13 @@ void logDataPoint() {
   float b_pct = readBatteryPercentage(b_volts);
 
   String curTime = getFormattedSystemTime();
-  dataLog[logIndex].timeString = curTime;
-  dataLog[logIndex].dhtTemp = isnan(t_dht) ? -127.0 : t_dht;
-  dataLog[logIndex].dhtHum = isnan(h_dht) ? -127.0 : h_dht;
-  dataLog[logIndex].dsProbe = t_probe;
+  dataLog[logIndex].timeString  = curTime;
+  dataLog[logIndex].dhtTemp     = isnan(t_dht) ? -127.0 : t_dht;
+  dataLog[logIndex].dhtHum      = isnan(h_dht) ? -127.0 : h_dht;
+  dataLog[logIndex].dsProbe     = t_probe;
+  dataLog[logIndex].kmeterTemp  = -127.0;  // placeholder until KMeterISO hardware arrives
   dataLog[logIndex].batteryVolts = b_volts;
-  dataLog[logIndex].batteryPct = b_pct;
+  dataLog[logIndex].batteryPct  = b_pct;
 
   Serial.println(F("+-------------------------------------------+"));
   Serial.print(F("| Local Frame Timestamp : ")); Serial.println(curTime);
@@ -89,6 +91,7 @@ void logDataPoint() {
   Serial.print(F("| DHT11 Air Temp        : ")); Serial.print(t_dht, 1); Serial.println(F(" °C"));
   Serial.print(F("| DHT11 Humidity        : ")); Serial.print(h_dht, 0); Serial.println(F(" %"));
   Serial.print(F("| DS18B20 Water Probe   : ")); Serial.print(t_probe, 1); Serial.println(F(" °C"));
+  Serial.print(F("| KMeterISO Needle Probe: ")); Serial.println(F("-- (not connected)"));
   Serial.print(F("| Battery Level         : ")); Serial.print(b_volts, 2); Serial.print(F("V (")); Serial.print(b_pct, 0); Serial.println(F("%)"));
   Serial.println(F("+-------------------------------------------+"));
 
@@ -110,10 +113,11 @@ void handleDataPoint() {
   
   String json = "{";
   json += "\"time_string\":\"" + dataLog[lastSavedIdx].timeString + "\",";
-  json += "\"dht_temp\":" + String(dataLog[lastSavedIdx].dhtTemp, 1) + ",";
-  json += "\"dht_humidity\":" + String(dataLog[lastSavedIdx].dhtHum, 0) + ",";
-  json += "\"ds_probe\":" + String(dataLog[lastSavedIdx].dsProbe, 1) + ",";
-  json += "\"battery_volts\":" + String(dataLog[lastSavedIdx].batteryVolts, 2) + ",";
+  json += "\"dht_temp\":"          + String(dataLog[lastSavedIdx].dhtTemp, 1)      + ",";
+  json += "\"dht_humidity\":"      + String(dataLog[lastSavedIdx].dhtHum, 0)       + ",";
+  json += "\"ds_probe\":"          + String(dataLog[lastSavedIdx].dsProbe, 1)      + ",";
+  json += "\"kmeter_temp\":"       + String(dataLog[lastSavedIdx].kmeterTemp, 1)   + ",";
+  json += "\"battery_volts\":"     + String(dataLog[lastSavedIdx].batteryVolts, 2) + ",";
   json += "\"battery_percentage\":" + String(dataLog[lastSavedIdx].batteryPct, 0);
   json += "}";
   
@@ -150,6 +154,7 @@ void handleFullDataDump() {
     batch += "\"dht_temp\":"           + String(dataLog[idx].dhtTemp, 1)      + ",";
     batch += "\"dht_humidity\":"       + String(dataLog[idx].dhtHum, 0)       + ",";
     batch += "\"ds_probe\":"           + String(dataLog[idx].dsProbe, 1)      + ",";
+    batch += "\"kmeter_temp\":"        + String(dataLog[idx].kmeterTemp, 1)   + ",";
     batch += "\"battery_volts\":"      + String(dataLog[idx].batteryVolts, 2) + ",";
     batch += "\"battery_percentage\":" + String(dataLog[idx].batteryPct, 0)   + "}";
 

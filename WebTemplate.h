@@ -36,10 +36,11 @@ const char INDEX_HTML[] PROGMEM = R"=====(
 <div class='card'>
     <h2>CAPM Live Monitor</h2>
     <table>
-        <tr><td>Air Temperature</td><td id='t_dht' class='val'>--</td></tr>
-        <tr><td>Air Humidity</td>   <td id='h_dht' class='val'>--</td></tr>
-        <tr><td>Water Probe</td>    <td id='t_ds'  class='val'>--</td></tr>
-        <tr><td>Battery</td>        <td id='v_bat' class='val'>--</td></tr>
+        <tr><td>Air Temperature</td> <td id='t_dht'    class='val'>--</td></tr>
+        <tr><td>Air Humidity</td>    <td id='h_dht'    class='val'>--</td></tr>
+        <tr><td>Water Probe</td>     <td id='t_ds'     class='val'>--</td></tr>
+        <tr><td>Needle Probe</td>    <td id='t_kmeter' class='val'>--</td></tr>
+        <tr><td>Battery</td>         <td id='v_bat'    class='val'>--</td></tr>
     </table>
 
     <div class='btn-group'>
@@ -65,6 +66,7 @@ const char INDEX_HTML[] PROGMEM = R"=====(
     let localLabels  = [];
     let localAirTemp = [];
     let localProbe   = [];
+    let localKmeter  = [];
     let lastTimestamp = "";
 
     let chart = null;
@@ -86,6 +88,12 @@ const char INDEX_HTML[] PROGMEM = R"=====(
                         label: 'Water Probe',
                         borderColor: '#00cec9',
                         backgroundColor: 'rgba(0,206,201,0.1)',
+                        borderWidth: 2, pointRadius: 3, fill: true, data: []
+                    },
+                    {
+                        label: 'Needle Probe',
+                        borderColor: '#e84393',
+                        backgroundColor: 'rgba(232,67,147,0.1)',
                         borderWidth: 2, pointRadius: 3, fill: true, data: []
                     }
                 ]
@@ -118,10 +126,11 @@ const char INDEX_HTML[] PROGMEM = R"=====(
             const json = await res.json();
             console.log('[CAPM] /data payload:', JSON.stringify(json));
 
-            document.getElementById('t_dht').innerText = json.dht_temp.toFixed(1) + ' C';
-            document.getElementById('h_dht').innerText = json.dht_humidity.toFixed(0) + ' %';
-            document.getElementById('t_ds').innerText  = json.ds_probe.toFixed(1) + ' C';
-            document.getElementById('v_bat').innerText = json.battery_volts.toFixed(2) + 'V (' + json.battery_percentage.toFixed(0) + '%)';
+            document.getElementById('t_dht').innerText    = json.dht_temp.toFixed(1) + ' C';
+            document.getElementById('h_dht').innerText    = json.dht_humidity.toFixed(0) + ' %';
+            document.getElementById('t_ds').innerText     = json.ds_probe.toFixed(1) + ' C';
+            document.getElementById('t_kmeter').innerText = (json.kmeter_temp <= -126) ? 'Not connected' : json.kmeter_temp.toFixed(1) + ' C';
+            document.getElementById('v_bat').innerText    = json.battery_volts.toFixed(2) + 'V (' + json.battery_percentage.toFixed(0) + '%)';
 
             flag.innerText = 'Sync Active: ' + (json.time_string || 'Connected');
             flag.style.color = 'green';
@@ -133,14 +142,18 @@ const char INDEX_HTML[] PROGMEM = R"=====(
                 localLabels.push(json.time_string);
                 localAirTemp.push(json.dht_temp);
                 localProbe.push(json.ds_probe);
+                // null keeps the line gap visible rather than drawing a flat -127 line
+                localKmeter.push(json.kmeter_temp <= -126 ? null : json.kmeter_temp);
                 if (localLabels.length > MAX_PTS) {
                     localLabels.shift();
                     localAirTemp.shift();
                     localProbe.shift();
+                    localKmeter.shift();
                 }
                 chart.data.labels           = localLabels;
                 chart.data.datasets[0].data = localAirTemp;
                 chart.data.datasets[1].data = localProbe;
+                chart.data.datasets[2].data = localKmeter;
                 chart.update();
                 console.log('[CAPM] Chart updated, points in buffer:', localLabels.length);
             } else {
@@ -173,6 +186,7 @@ const char INDEX_HTML[] PROGMEM = R"=====(
                 localLabels.push(p.time_string || '');
                 localAirTemp.push(p.dht_temp);
                 localProbe.push(p.ds_probe);
+                localKmeter.push(p.kmeter_temp <= -126 ? null : p.kmeter_temp);
             });
 
             // Set lastTimestamp so the polling loop doesn't re-add the final point
@@ -182,6 +196,7 @@ const char INDEX_HTML[] PROGMEM = R"=====(
                 chart.data.labels           = localLabels;
                 chart.data.datasets[0].data = localAirTemp;
                 chart.data.datasets[1].data = localProbe;
+                chart.data.datasets[2].data = localKmeter;
                 chart.update();
                 console.log('[CAPM] Chart seeded with', localLabels.length, 'points, last timestamp:', lastTimestamp);
             }
