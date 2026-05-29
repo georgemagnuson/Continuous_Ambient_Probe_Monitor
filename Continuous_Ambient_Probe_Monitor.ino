@@ -37,6 +37,7 @@ int logIndex = 0;
 unsigned long lastLogTime = 0;
 unsigned long lastHeartbeatTime = 0;
 String globalIP = "0.0.0.0";
+bool lastWifiState = false;
 
 float readBatteryPercentage(float& outVolts) {
   int rawADC = analogRead(BATTERY_PIN);
@@ -90,12 +91,11 @@ void logDataPoint() {
 }
 
 void handleRoot() {
-  // Clear any residual content-length overrides from other endpoints
   server.sendHeader("Cache-Control", "no-cache, private");
-  
-  // Send the PROGMEM string directly. 
-  // The ESP8266 core handles the size and packet slicing flawlessly behind the scenes.
-  server.send_P(200, "text/html", INDEX_HTML);
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+  server.sendContent_P(INDEX_HTML);
+  server.sendContent("");  // terminate chunked transfer
 }
 
 void handleDataPoint() {
@@ -197,10 +197,10 @@ void loop() {
   server.handleClient();
   handleHeartbeatSignal();
 
-  if (WiFi.status() != WL_CONNECTED) {
-    digitalWrite(BOARD_LED, LOW); 
-  } else {
-    digitalWrite(BOARD_LED, HIGH); 
+  bool wifiNow = (WiFi.status() == WL_CONNECTED);
+  if (wifiNow != lastWifiState) {
+    lastWifiState = wifiNow;
+    digitalWrite(BOARD_LED, wifiNow ? HIGH : LOW);
   }
 
   unsigned long currentMillis = millis();
