@@ -15,13 +15,15 @@
 #include "WebTemplate.h"
 #include "NetworkManager.h"
 #include "RTCManager.h"
+#include "KMeterManager.h"
 
 OneWire oneWire(DS18B20_PIN);
 DallasTemperature dsSensors(&oneWire);
 DHT dht(DHT_PIN, DHTTYPE);
 ESP8266WebServer server(80);
 RTC_DS3231 rtc;
-bool rtcReady = false;
+bool rtcReady    = false;
+bool kmeterReady = false;
 
 struct DataPoint {
   String timeString;
@@ -85,7 +87,7 @@ void logDataPoint() {
   dataLog[logIndex].dhtTemp     = isnan(t_dht) ? -127.0 : t_dht;
   dataLog[logIndex].dhtHum      = isnan(h_dht) ? -127.0 : h_dht;
   dataLog[logIndex].dsProbe     = t_probe;
-  dataLog[logIndex].kmeterTemp  = -127.0;  // placeholder until KMeterISO hardware arrives
+  dataLog[logIndex].kmeterTemp  = readKMeterTemp(kmeterReady);
   dataLog[logIndex].batteryVolts = b_volts;
   dataLog[logIndex].batteryPct  = b_pct;
 
@@ -98,7 +100,12 @@ void logDataPoint() {
   Serial.print(F("| DHT11 Ambient Air Temp      : ")); Serial.print(t_dht, 1); Serial.println(F(" °C"));
   Serial.print(F("| DHT11 Ambient Air Humidity  : ")); Serial.print(h_dht, 0); Serial.println(F(" %"));
   Serial.print(F("| DS18B20 Sensor              : ")); Serial.print(t_probe, 1); Serial.println(F(" °C"));
-  Serial.print(F("| KMeterISO Needle Probe Temp : ")); Serial.println(F("-- (not connected)"));
+  Serial.print(F("| KMeterISO Needle Probe Temp : "));
+  if (dataLog[logIndex].kmeterTemp <= -126.0) {
+    Serial.println(F("-- (not connected)"));
+  } else {
+    Serial.print(dataLog[logIndex].kmeterTemp, 1); Serial.println(F(" °C"));
+  }
   Serial.print(F("| Battery Level               : ")); Serial.print(b_volts, 2); Serial.print(F("V (")); Serial.print(b_pct, 0); Serial.println(F("%)"));
   Serial.println(F("+-----------------------------------------------+"));
 
@@ -198,7 +205,8 @@ void setup() {
 
   runFullHardwareTestSuite();
 
-  rtcReady = initRTC(rtc);
+  rtcReady    = initRTC(rtc);
+  kmeterReady = initKMeter();
 
   globalIP = connectWiFi();
   synchronizeNTP();
