@@ -7,5 +7,12 @@ build/
 *.bin
 *.map
 
+# Reference documents
+*.html
+*_files/
+
+# Memory Bank
+memory-bank/
+
 # macOS
 .DS_Store

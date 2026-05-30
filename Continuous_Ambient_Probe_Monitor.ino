@@ -9,10 +9,10 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "DHT.h"
+#include <D1Mini_CAPM.h>
 
 #include "Config.h"
 #include "WebTemplate.h"
-#include "HardwarePOST.h"
 #include "NetworkManager.h"
 
 OneWire oneWire(DS18B20_PIN);
