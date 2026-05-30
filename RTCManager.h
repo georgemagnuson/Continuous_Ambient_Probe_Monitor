@@ -53,7 +53,11 @@ inline void syncRTCFromNTP(RTC_DS3231& rtc) {
     Serial.println(F("[CAPM RTC] NTP time not valid — DS3231 not updated"));
     return;
   }
-  rtc.adjust(DateTime((uint32_t)sysNow));
+  // Convert UTC to local time (TZ_INFO applied by configTime) before stamping RTC
+  struct tm localTm;
+  localtime_r(&sysNow, &localTm);
+  rtc.adjust(DateTime(localTm.tm_year + 1900, localTm.tm_mon + 1, localTm.tm_mday,
+                      localTm.tm_hour, localTm.tm_min, localTm.tm_sec));
   DateTime adjusted = rtc.now();
   char buf[20];
   snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d",
