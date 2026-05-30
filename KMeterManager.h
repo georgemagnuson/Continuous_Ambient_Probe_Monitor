@@ -47,7 +47,7 @@ inline float readKMeterTemp(bool kmeterReady) {
   Wire.write(KMETER_REG_TEMP);
   if (Wire.endTransmission() != 0) return -127.0f;
 
-  if (Wire.requestFrom(KMETER_ADDR, (uint8_t)4) < 4) return -127.0f;
+  if (Wire.requestFrom((uint8_t)KMETER_ADDR, (uint8_t)4) < 4) return -127.0f;
 
   uint8_t buf[4];
   for (uint8_t i = 0; i < 4; i++) buf[i] = Wire.read();
