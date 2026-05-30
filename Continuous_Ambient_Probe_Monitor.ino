@@ -14,11 +14,14 @@
 #include "Config.h"
 #include "WebTemplate.h"
 #include "NetworkManager.h"
+#include "RTCManager.h"
 
 OneWire oneWire(DS18B20_PIN);
 DallasTemperature dsSensors(&oneWire);
 DHT dht(DHT_PIN, DHTTYPE);
 ESP8266WebServer server(80);
+RTC_DS3231 rtc;
+bool rtcReady = false;
 
 struct DataPoint {
   String timeString;
@@ -77,7 +80,7 @@ void logDataPoint() {
   float b_volts = 0.0;
   float b_pct = readBatteryPercentage(b_volts);
 
-  String curTime = getFormattedSystemTime();
+  String curTime = getRTCTimeString(rtc, rtcReady);
   dataLog[logIndex].timeString  = curTime;
   dataLog[logIndex].dhtTemp     = isnan(t_dht) ? -127.0 : t_dht;
   dataLog[logIndex].dhtHum      = isnan(h_dht) ? -127.0 : h_dht;
@@ -90,7 +93,7 @@ void logDataPoint() {
 
   Serial.println(F("+-----------------------------------------------+"));
   Serial.print(F("| Data Point #                : ")); Serial.println(totalLogCount);
-  Serial.print(F("| Local Frame Timestamp       : ")); Serial.println(curTime);
+  Serial.print(F("| RTC Timestamp               : ")); Serial.println(curTime);
   Serial.print(F("| Device IP Address           : ")); Serial.println(globalIP);
   Serial.print(F("| DHT11 Ambient Air Temp      : ")); Serial.print(t_dht, 1); Serial.println(F(" °C"));
   Serial.print(F("| DHT11 Ambient Air Humidity  : ")); Serial.print(h_dht, 0); Serial.println(F(" %"));
@@ -195,8 +198,11 @@ void setup() {
 
   runFullHardwareTestSuite();
 
+  rtcReady = initRTC(rtc);
+
   globalIP = connectWiFi();
   synchronizeNTP();
+  if (rtcReady) syncRTCFromNTP(rtc);
 
   dht.begin();
   dsSensors.begin();
